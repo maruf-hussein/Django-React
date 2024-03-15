@@ -19,11 +19,12 @@ def signup_view( request ):
 
 			login( request, user )
 
-			return Response( { "message": "Sign-Up successful" }, status=status.HTTP_201_CREATED )
+			return Response( { "details": "Sign-Up was successful" }, status=status.HTTP_201_CREATED )
 
-		return Response( serializer.errors, status=status.HTTP_400_BAD_REQUEST )
+		return Response( { "details": "A user with the same username or email already exists." },
+		                 status=status.HTTP_409_CONFLICT )
 
-	return Response( { "error": "method not allowed!" }, status=status.HTTP_405_METHOD_NOT_ALLOWED )
+	return Response( { "details": "Method not allowed*-." }, status=status.HTTP_405_METHOD_NOT_ALLOWED )
 
 
 @api_view( [ "POST", ] )
@@ -32,7 +33,7 @@ def signup_view( request ):
 def signin_view( request ):
 	if request.user.is_authenticated:
 		print( "Authenticated=========================================================" )
-		return Response( { "message": "Already signed-in!" }, status=status.HTTP_400_BAD_REQUEST )
+		return Response( { "details": "Already signed-in!" }, status=status.HTTP_400_BAD_REQUEST )
 
 	email = request.data.get( "email" )
 	password = request.data.get( "password" )
@@ -40,15 +41,15 @@ def signin_view( request ):
 
 	if user is not None:
 		login( request, user )
-		return Response( { "message": "Sign-In successful" }, status=status.HTTP_200_OK )
+		return Response( { "details": "Sign-In was successful" }, status=status.HTTP_200_OK )
 
-	return Response( { "message": "Invalid credentials, try again!" }, status=status.HTTP_400_BAD_REQUEST )
+	return Response( { "details": "Invalid credentials, please try again!" }, status=status.HTTP_404_NOT_FOUND )
 
 
 @api_view( [ "GET" ] )
 def signout_view( request ):
 	logout( request )
-	return Response( { "message": "Sign-Out successful" }, status=status.HTTP_200_OK )
+	return Response( { "details": "Sign-Out was successful" }, status=status.HTTP_200_OK )
 
 
 @api_view( [ "GET" ] )
@@ -68,5 +69,11 @@ def current_user_view( request ):
 def test_todos_view( request ):
 	res = requests.get( "https://jsonplaceholder.typicode.com/posts" )
 	res = res.json()
-	print( "TODOS: ===", res )
 	return Response( res, status=status.HTTP_200_OK )
+
+
+@api_view( [ "GET" ] )
+def all_users_view( request ):
+	users = User.objects.all()
+	serialize = UserSerializer( instance=users, many=True )
+	return Response( serialize.data, status=status.HTTP_200_OK )

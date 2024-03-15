@@ -9,5 +9,6 @@ urlpatterns = [
 
 	# usual
 	path( "current_user/", current_user_view, name="current_user_view" ),
-	path( "test_todos/", test_todos_view, name="test_todos_view" )
+	path( "test_todos/", test_todos_view, name="test_todos_view" ),
+	path( "all_users/", all_users_view, name="all_users_view" )
 	]
