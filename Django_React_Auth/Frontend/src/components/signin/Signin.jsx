@@ -1,7 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Input } from "..";
 import { useState } from "react";
-import axios from "axios";
+import { useDispatch } from "react-redux";
+import { signinUser } from "../../toolkit/auth/actions";
+import { cancelFormSubmission } from "../helpers/functions";
 import { toast } from "sonner";
 
 const Signin = () => {
@@ -11,6 +13,7 @@ const Signin = () => {
   };
   const [formData, setFormData] = useState(initialFormData);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleInputChange = (fieldName, value) => {
     setFormData({
@@ -23,39 +26,32 @@ const Signin = () => {
     e.preventDefault();
     const url = import.meta.env.VITE_BACKEND_BASE_URL;
 
+    // ---: Validation variables ---
     const formFieldEmpty = Object.keys(formData).some(
       (key) => formData[key].trim() === "",
     );
     const emailValidateRegEx =
       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     const validEmail = emailValidateRegEx.test(formData.email);
+    // ---: Validation variables ---
 
-    if (formFieldEmpty) {
+    if (!formFieldEmpty && validEmail) {
+      // await dispatch(signinUser({ url, formData }));
+      const dispatchedResponse = await dispatch(signinUser({ url, formData }));
+      console.log(
+        "Signin.jsx :: (dispatchedResponse) :: \n",
+        dispatchedResponse,
+      );
+      if (dispatchedResponse.type === "auth/signin/fulfilled") {
+        const userId = await dispatchedResponse.payload.data.user_id;
+        console.log("Signin.jsx :: dispatchedResponse :: ", dispatchedResponse);
+        await setFormData(initialFormData);
+        await navigate(`/${userId}/~`);
+      }
+    } else if (formFieldEmpty) {
       toast.warning("Please fill in the input fields, it cannot be empty.");
     } else if (!validEmail) {
       toast.warning("Invalid email address.");
-    }
-
-    if (!formFieldEmpty && validEmail) {
-      try {
-        await axios
-          .post(`${url}/signin/`, formData)
-          .then((res) => {
-            console.log("RES=== ", res);
-
-            console.log("Submited --", "Form-Data: ", formData);
-            toast.success(`${res.data.details}`);
-
-            setFormData(initialFormData);
-            navigate("/--⁕");
-          })
-          .catch((error) => {
-            console.log("SIGNIN ERROR: ", error);
-            toast.error(`${error.response.data.details}`);
-          });
-      } catch (error) {
-        toast.error(error.response.data.details);
-      }
     }
   };
 
@@ -91,19 +87,19 @@ const Signin = () => {
                 />
               </div>
 
-              <div className="mt-[7px] flex w-full items-center justify-between gap-x-1">
+              <div className="mt-[7px] flex w-full items-center justify-between gap-x-2">
                 <button
                   type="reset"
-                  className="w-2/5 rounded-[4px] border border-black/5 bg-gray-200 py-3 text-center leading-none text-black duration-300 hover:bg-gray-300"
-                  onClick={() => {
-                    setFormData(initialFormData);
-                  }}
+                  className="w-2/5 rounded-lg border border-black/5 bg-white py-[11px] text-center leading-none text-black duration-300 hover:bg-gray-100"
+                  onClick={() =>
+                    cancelFormSubmission({ setFormData, initialFormData })
+                  }
                 >
-                  Cencel
+                  Cancel
                 </button>
                 <button
                   type="submit"
-                  className="w-3/5 rounded-[4px] border border-black/5 bg-black py-3 text-center leading-none text-white duration-300 hover:bg-black/80 "
+                  className="w-3/5 rounded-lg border border-black/5 bg-black py-[11px] text-center leading-none text-white duration-300 hover:bg-black/80 "
                 >
                   Submit
                 </button>
@@ -112,7 +108,7 @@ const Signin = () => {
               <div className="flex w-full items-center justify-center">
                 <div className="flex flex-row gap-x-1 text-[13px] leading-none ">
                   <span>Don&apos;t have an account</span>
-                  <Link to={"/signup--⁕"} className="underline">
+                  <Link to={"/signup"} className="underline">
                     Sign Up
                   </Link>
                 </div>

@@ -2,15 +2,17 @@ import { useState } from "react";
 import { Input } from "..";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import axios from "axios";
+import { signupUser } from "../../toolkit/auth/actions";
+import { useDispatch } from "react-redux";
 
 const Signup = () => {
   const initialFormData = {
-    username: "",
+    name: "",
     email: "",
     password: "",
   };
   const [formData, setFormData] = useState(initialFormData);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleInputChange = (fieldName, value) => {
@@ -30,56 +32,28 @@ const Signup = () => {
     const emailValidateRegEx =
       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     const validEmail = emailValidateRegEx.test(formData.email);
-    const validUsername = /^[a-z][a-z0-9_]*[a-z0-9_]$/.test(
-      formData.username.trim(),
-    );
     const validPassword = formData.password.trim().length >= 8;
 
     if (formFieldEmpty) {
       console.log("formFieldEmpty: ", formFieldEmpty);
       toast.warning("Please fill in the input fields, it cannot be empty.");
-    } else if (!validUsername || !formData.username.trim().length > 5) {
-      console.log("validUsername: ", validUsername);
-      toast.warning(
-        "Invalid username, Username must be 5 characters long and cannot start with uppercase letters, number or special characters.",
-      );
     } else if (!validEmail) {
       console.log("validEmail: ", validEmail);
       toast.warning("Invalid email address.");
     } else if (!validPassword) {
       console.log("validEmail: ", validEmail);
-      toast.warning("Invalid password, password must be 8 characters long.");
+      toast.warning("Password must be 8 characters long.");
     }
 
-    if (!formFieldEmpty && validUsername && validEmail && validPassword) {
-      console.log("formFieldEmpty: ", formFieldEmpty);
-
-      try {
-        axios
-          .post(`${url}/signup/`, formData)
-          .then((response) => {
-            console.log("Signup response: ", response);
-            if (response.status === 201) {
-              toast.success(response.data.details);
-              console.log("Signup response details: ", response.data.details);
-            }
-            setFormData(initialFormData);
-            navigate("/signin--⁕");
-          })
-          .catch((error) => {
-            if (error.response.status === 409) {
-              toast.error(error.response.data.details);
-              console.log(
-                "Signup response details: ",
-                error.response.data.details,
-              );
-            } else if (error.response.status === 405) {
-              toast.error(error.response.data.detail);
-              console.log("Signup response details: ", error.response);
-            }
-          });
-      } catch (error) {
-        console.log(" Signup error: ", error);
+    if (!formFieldEmpty && validEmail && validPassword) {
+      const dispatchedResponse = await dispatch(
+        signupUser({ url, formData, setFormData, initialFormData, navigate }),
+      );
+      if (dispatchedResponse.type === "auth/signup/fulfilled") {
+        const user_id = await dispatchedResponse.payload.data.user_id;
+        console.log("Signup :: dispatchedResponse :: ", dispatchedResponse);
+        setFormData(initialFormData);
+        navigate(`/${user_id}/~`);
       }
     }
   };
@@ -101,11 +75,11 @@ const Signup = () => {
             <div className="flex w-full flex-col gap-y-6">
               <div className="flex w-full flex-col gap-y-3">
                 <Input
-                  label="Username"
+                  label="Name"
                   type="text"
-                  value={formData.username}
-                  onChange={(value) => handleInputChange("username", value)}
-                  autoComplete={"username"}
+                  value={formData.name}
+                  onChange={(value) => handleInputChange("name", value)}
+                  autoComplete={"name"}
                 />
 
                 <Input
@@ -125,19 +99,19 @@ const Signup = () => {
                 />
               </div>
 
-              <div className="mt-[7px] flex w-full items-center justify-between gap-x-1">
+              <div className="mt-[7px] flex w-full items-center justify-between gap-x-4">
                 <button
                   type="reset"
-                  className="w-2/5 rounded-[4px] border border-black/5 bg-gray-200 py-3 text-center leading-none text-black duration-300 hover:bg-gray-300"
+                  className="w-2/5 rounded-lg border border-black/5 bg-white py-[11px] text-center leading-none text-black duration-300 hover:bg-gray-100"
                   onClick={() => {
                     setFormData(initialFormData);
                   }}
                 >
-                  Cencel
+                  Cancel
                 </button>
                 <button
                   type="submit"
-                  className="w-3/5 rounded-[4px] border border-black/5 bg-black py-3 text-center leading-none text-white duration-300 hover:bg-black/80 "
+                  className="w-3/5 rounded-lg border border-black/5 bg-black py-[11px] text-center leading-none text-white duration-300 hover:bg-black/80 "
                 >
                   Submit
                 </button>
@@ -146,7 +120,7 @@ const Signup = () => {
               <div className="flex w-full items-center justify-center">
                 <div className="flex flex-row gap-x-1 text-[13px] leading-none ">
                   <span>Already have an account</span>
-                  <Link to={"/signin--⁕"} className="underline">
+                  <Link to={"/signin"} className="underline">
                     Sign In
                   </Link>
                 </div>
